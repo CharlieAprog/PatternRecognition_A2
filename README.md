@@ -8,3 +8,4 @@ To make sure this fill will run when being evaluated, we will be using a virtual
 
 Once in the venv, you can run *python install* to install the dependencies.
 To install the requirements from the requirements.txt file run *pip install -r requirements.txt*
+If new requirements were added, add them to the requirements file by running: *pip freeze > requirements.txt*
