@@ -1,11 +1,26 @@
 # PatternRecognition_A2
 Repository for the second assignment of the Pattern Recognition course 2021/2022, Group 21.
 
+# Setting up a virtual environment
+Virtual environments will allow you to only have access to the requirements you have installed wile in the virtual environment. This prevents you from using a library that has not been mentioned in the requirements.txt. To create your own virtual environment follow the following steps
+### Installing Virtual Environments
+Venv is included with Python versions 3.3, if you have the newest verison of python it should be incluced. Otherwise install via pip
+> *pip install virtualenv*
 
-### Requirements
-To make sure this fill will run when being evaluated, we will be using a virtual environment. To code using the virtual environment run the following commands:
-*source virtual_environment/bin/activate*
+Next, set up the virtual environment using the following command from the project directory
+> *python3 -m venv venv*
 
-Once in the venv, you can run *python install* to install the dependencies.
-To install the requirements from the requirements.txt file run *pip install -r requirements.txt*
-If new requirements were added, add them to the requirements file by running: *pip freeze > requirements.txt*
+Now you can activate and deactivate your venv using the follwing commands
+#### Windows
+>activate: *venv\Scripts\activate.bat*
+>decativate: *deactivate*
+#### Linux/Mac
+>activate: *source venv/bin/activate*
+>deactivate: *deactivate*
+
+# Installing and saving the requirements
+To install the requirements to make sure the code will run as expected,
+>run: *pip install -r requirements.txt*
+
+If new requirements have been added to the code AND YOU ARE USING A VENV, you can save the requirements by running the following command
+>run: *pip freeze > requirements.txt*
