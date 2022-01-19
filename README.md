@@ -10,4 +10,5 @@ To install the requirements to make sure the code will run as expected,
 The individual files from be launched from the src directory
 to run a pipeline (eg. numeric data pipeline)
 >*cd src*
+>
 >*python3 numeric.py*
