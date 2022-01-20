@@ -1,23 +1,18 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from tqdm import tqdm
 import random
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import train_test_split
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from sklearn.cluster import DBSCAN
-from sklearn.linear_model import LogisticRegression
-
-
-
-
-
 from sklearn.decomposition import PCA as sklearnPCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score
-
+from sklearn.model_selection import cross_validate, train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from tqdm import tqdm
 
 
 def make_scatter_plot(data, labels, title, save_plot=False, dimension=2, cluster=None):
@@ -211,21 +206,42 @@ def main():
 
 
     #------------Clustering------------#
-    print('\nclustering data...')
-    # cluster_data_search(original_train, original_test)
-    # cluster_data_search(reduced_train, reduced_test)
-    original_labels, original_clusters = cluster_with_params(original_train, original_test, 17.47, 8)
-    reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 5.63, 7)
+    # print('\nclustering data...')
+    # # cluster_data_search(original_train, original_test)
+    # # cluster_data_search(reduced_train, reduced_test)
+    # original_labels, original_clusters = cluster_with_params(original_train, original_test, 17.47, 8)
+    # reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 5.63, 7)
 
-    print(f'Estimated no. of clusters for original dataset: {original_clusters}')
-    print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
-    original_data = np.concatenate((reduced_train, reduced_test))
-    reduced_data = np.concatenate((reduced_train, reduced_test))
-    visualise_cluster(original_data, original_labels, dims=2, save=True,  title='Clustering with Original Data 2D')
-    visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
-    visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
-    visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
+    # print(f'Estimated no. of clusters for original dataset: {original_clusters}')
+    # print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
+    # original_data = np.concatenate((reduced_train, reduced_test))
+    # reduced_data = np.concatenate((reduced_train, reduced_test))
+    # visualise_cluster(original_data, original_labels, dims=2, save=True,  title='Clustering with Original Data 2D')
+    # visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
+    # visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
+    # visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
     #TODO Gridsearch (crossvalidation, ensemble)
+
+    #------------Grid Search------------#
+    #knn for original
+    neighbors  = range(1,31)
+    weights = ['uniform', 'distance']
+    algorithms = ['auto', 'ball_tree', 'kd_tree', 'brute']
+    ps  = [1, 2]
+    for weight in tqdm(weights, desc='weights', leave=False):
+        for p in tqdm(ps, desc='ps', leave=False):
+            for algorithm in tqdm(algorithms, desc='algorithms', leave=False):
+                for neighbor in tqdm(neighbors, desc='neighbors', leave=False):
+                    KNN = KNeighborsClassifier(n_neighbors=neighbor, weights=weight, p=p, algorithm=algorithm)
+                    scores = cross_validate(KNN, original_train, y_train, cv=10, scoring="f1", return_train_score=True)
+                    print(scores)
+                    exit()
+
+
+    #logregression for reduced
+
+    #------------Ensemble------------#
+
 
 
 
