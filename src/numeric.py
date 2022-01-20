@@ -46,43 +46,50 @@ def make_scatter_plot(data, labels, title, save_plot=False, dimension=2, cluster
     else:
         plt.show()
 
-def visualise_data(x, y, dims=2, save=False, clusters=None):
+def visualise_data(x, y, dims=2, save=False):
     title = 'visualisation of numeric data'
     pca = sklearnPCA(n_components=dims) #2-dimensional PCA
     pca_transformed = pd.DataFrame(pca.fit_transform(x))
-    if not any(clusters):
-        pca_transformed.index = y.index
-    make_scatter_plot(pca_transformed, y,f'{title}_PCA', dimension=dims, save_plot=save, cluster=clusters)
+    pca_transformed.index = y.index
+    make_scatter_plot(pca_transformed, y,f'{title}_PCA', dimension=dims, save_plot=save)
 
     lda = LDA(n_components=dims) #2-dimensional LDA
     lda_transformed = pd.DataFrame(lda.fit_transform(x, y))
-    if not any(cluster):
-        lda_transformed.index = y.index
-    make_scatter_plot(lda_transformed, y,f'{title}_LDA',dimension=dims, save_plot=save, cluster=clusters)
+    lda_transformed.index = y.index
+    make_scatter_plot(lda_transformed, y,f'{title}_LDA',dimension=dims, save_plot=save)
+
+def visualise_cluster(x, cluster_lables, dims=2, save=False, title='Clustering'):
+    pca = sklearnPCA(n_components=dims)
+    transformed = pd.DataFrame(pca.fit_transform(x))
+    make_scatter_plot(transformed, [],f'{title}',dimension=dims, save_plot=save, cluster=cluster_lables)
 
 def preprocess_data(model, x_train, x_test, y_train):
     x_train = model.fit_transform(x_train, y_train)
     x_test = model.transform(x_test)
     return x_train, x_test
 
-def determine_best_col_num(model, classifier, x_train, y_train):
+def determine_best_col_num(model, classifier, x_train, y_train, max_n, plot=False):
     x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, test_size=0.3, stratify=y_train)
-    print(x_train.shape, x_test.shape)
     f1_scores = []
-    num_cols = range(2, 300)
-    for n in tqdm(num_cols):
+    num_cols = range(2, max_n)
+    for n in tqdm(num_cols, leave=False):
         model.set_params(n_components=n)
         x_train_new, x_test_new = preprocess_data(model, x_train, x_test, y_train)
         pred = run_model(classifier, x_train_new, x_test_new, y_train)
         acc, f1 = get_score(pred, y_test)
         f1_scores.append(f1)
-        print(n)
 
     index = np.argmax(np.array(f1_scores))
     print(f'smallest n:{num_cols[index]} with score of:{f1_scores[index]}')
-    plt.figure()
-    plt.plot(num_cols, f1_scores)
-    plt.show()
+    if plot:
+        plt.figure()
+        plt.plot(num_cols, f1_scores)
+        plt.ylabel('f1 score')
+        plt.xlabel('number of components')
+        plt.title(plot)
+        plt.savefig(f'../plots/numeric/{plot}.jpg')
+        plt.show()
+    return index + 2
 
 def run_model(model, x_train, x_test, y_train):
     model.fit(x_train, y_train.to_numpy())
@@ -93,45 +100,50 @@ def classify_data(x_train, x_test, y_train, y_test):
     y_predKNN = run_model(KNN, x_train, x_test, y_train)
     knn_accuracy, knn_f1 = get_score(y_predKNN, y_test)
 
-    Tree = DecisionTreeClassifier()
-    y_predTree = run_model(Tree, x_train, x_test, y_train)
+    tree = DecisionTreeClassifier()
+    y_predTree = run_model(tree, x_train, x_test, y_train)
     tree_accuracy, tree_f1 = get_score(y_predTree, y_test)
 
-    Forest = RandomForestClassifier()
-    y_predForest = run_model(Forest, x_train, x_test, y_train)
-    forest_accuracy, forest_f1 = get_score(y_predForest, y_test)
+    log = LogisticRegression(max_iter=400, solver='liblinear')
+    y_predlog = run_model(log, x_train, x_test, y_train)
+    log_accuracy, log_f1 = get_score(y_predlog, y_test)
 
     print(f'knn accuracy: {knn_accuracy}, knn f1: {knn_f1}')
     print(f'tree accuracy: {tree_accuracy}, tree f1: {tree_f1}')
-    print(f'forest accuracy:{forest_accuracy}, forest f1: {forest_f1}')
+    print(f'log accuracy:{log_accuracy}, log f1: {log_f1}')
 
 def get_score(pred, y_test):
     accuracy = round(accuracy_score(y_test, pred), 3)
     f1 = round(f1_score(y_test, pred, average="macro", zero_division=0), 3)
     return accuracy, f1
 
-def cluster_data(x_train, x_test):
+def cluster_data_search(x_train, x_test):
     complete_data = np.concatenate((x_train, x_test))
     norm = (complete_data - np.min(complete_data))/np.ptp(complete_data)
-    eps_vals = np.arange(0.5, 7, 1)
-    min_vals = range(2, 6)
+    eps_vals = np.arange(5.5, 6, 0.01)
+    min_vals = range(2, 10)
     for eps_val in eps_vals:
         for min_sample in min_vals:
             clustering = DBSCAN(eps = eps_val, min_samples = min_sample).fit(complete_data)
             labels = clustering.labels_
             clusters =len(set(labels))-(1 if -1 in labels else 0)
             print(clusters,eps_val,min_sample )
-    clustering = DBSCAN(eps = 2.5, min_samples = 4).fit(complete_data)
+
+def cluster_with_params(x1, x2, eps, min_samples):
+    complete_data = np.concatenate((x1, x2))
+    clustering = DBSCAN(eps = eps, min_samples = min_samples).fit(complete_data)
     labels = clustering.labels_
     clusters =len(set(labels))-(1 if -1 in labels else 0)
     return labels, clusters
 
 
-def main():
-    random.seed(69)
-    data_path = f'../data/Genes/Original'
-    print('\nreading data...')
 
+def main():
+    random.seed(420)
+    data_path = f'../data/Genes/Original'
+    print('reading data...')
+
+    #------------Data Analysis------------#
     column_names = [f'gene_{i}' for i in range(0, 200)]
     column_names.append('Unnamed: 0')
     # x = pd.read_csv(f'{data_path}/data.csv').set_index('Unnamed: 0')
@@ -142,53 +154,78 @@ def main():
     print(f'number of rows: {row_size}\nnumber of columns: {col_size}')
     print(f'unique classes: {unique_classes}')
     # visualise_data(x, y, save=False, dimensions=3)
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, stratify=y)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, stratify=y, random_state=69)
 
+    #------------Feature Extraction------------#
     print('\npreprocessing data...')
-    pca = sklearnPCA()
+    pca = sklearnPCA(random_state=69)
     lda = LDA()
     KNN = KNeighborsClassifier(n_neighbors=5)
-    # determine_best_col_num(pca, KNN, x_train.to_numpy(), y_train)
-    # determine_best_col_num(lda, KNN, x_train.to_numpy(), y_train)
+    clf = LogisticRegression(random_state=69, max_iter=200)
+    # pca_components = determine_best_col_num(pca, clf, x_train.to_numpy(), y_train, 50, plot='PCA F1 Scores')
+    # lda_components = determine_best_col_num(lda, clf, x_train.to_numpy(), y_train, 5, plot='LDA F1 Scores')
+    # pca.set_params(n_components=pca_components)
+    # lda.set_params(n_components=lda_components)
 
-
-
+    #from previous experiments we found
+    pca.set_params(n_components=6)
+    lda.set_params(n_components=4)
 
     pca_x_train, pca_x_test = preprocess_data(pca, x_train, x_test, y_train)
-    print(f'columns before pca:{x_train.shape[1]}, columns after pca:{pca_x_train.shape[1]}')
-
     lda_x_train, lda_x_test = preprocess_data(lda, x_train, x_test, y_train)
-    print(f'columns before lda:{x_train.shape[1]}, columns after lda:{lda_x_train.shape[1]}')
+    print(f'columns before PCA:{x_train.shape[1]}, columns after PCA:{pca_x_train.shape[1]}')
+    print(f'columns before LDA:{x_train.shape[1]}, columns after LDA:{lda_x_train.shape[1]}')
 
-
-    print('\ntesting preprocessed data')
+    print('\ncomparing reduced data on KNN')
     original_train = x_train.to_numpy()
     original_test = x_test.to_numpy()
 
     original_pred = run_model(KNN, original_train, original_test, y_train)
-    original_accuracy, original_f1 = get_score(original_pred, y_test)
-
     pca_pred = run_model(KNN, pca_x_train, pca_x_test, y_train)
-    pca_accuracy, pca_f1 = get_score(pca_pred, y_test)
-
     lda_pred = run_model(KNN, lda_x_train, lda_x_test, y_train)
+    original_accuracy, original_f1 = get_score(original_pred, y_test)
+    pca_accuracy, pca_f1 = get_score(pca_pred, y_test)
     lda_accuracy, lda_f1 = get_score(lda_pred, y_test)
 
+
     print(f'original accuracy: {original_accuracy}, original f1: {original_f1}')
-    print(f'pca accuracy: {pca_accuracy}, pca f1: {pca_f1}')
-    print(f'lda accuracy: {lda_accuracy}, lda f1: {lda_f1}')
+    print(f'PCA accuracy: {pca_accuracy}, PCA f1: {pca_f1}')
+    print(f'LDA accuracy: {lda_accuracy}, LDA f1: {lda_f1}')
 
-    print('\ntesting models...')
-    classify_data(pca_x_train, pca_x_test, y_train, y_test)
+    if lda_f1 >= pca_f1:
+        reduced_train = lda_x_train
+        reduced_test = lda_x_test
+        print('LDA is the better reducer for this dataset')
+    else:
+        reduced_train = pca_x_train
+        reduced_test = pca_x_test
+        print('PCA is the better reducer for this dataset')
 
+
+    #------------Classification------------#
+    # print('\ntesting models...')
+    # print('original dataset')
+    # classify_data(original_train, original_test, y_train, y_test)
+    # print('reduced data')
+    # classify_data(reduced_train, reduced_test, y_train, y_test)
+
+
+    #------------Clustering------------#
     print('\nclustering data...')
-    # original_labels, original_clusters= cluster_data(original_train, original_test)
-    reduced_labels, reduced_clusters = cluster_data(lda_x_train, lda_x_test)
-    # print(f'Estimated no. of clusters for original dataset: {original_clusters}')
+    # cluster_data_search(original_train, original_test)
+    # cluster_data_search(reduced_train, reduced_test)
+    original_labels, original_clusters = cluster_with_params(original_train, original_test, 17.47, 8)
+    reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 5.63, 7)
+
+    print(f'Estimated no. of clusters for original dataset: {original_clusters}')
     print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
-    print(reduced_labels)
-    data = np.concatenate((lda_x_train, lda_x_test))
-    visualise_data(data, [], dims=3, save=False,  clusters=reduced_labels)
+    original_data = np.concatenate((reduced_train, reduced_test))
+    reduced_data = np.concatenate((reduced_train, reduced_test))
+    visualise_cluster(original_data, original_labels, dims=2, save=True,  title='Clustering with Original Data 2D')
+    visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
+    visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
+    visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
+    #TODO Gridsearch (crossvalidation, ensemble)
 
 
 

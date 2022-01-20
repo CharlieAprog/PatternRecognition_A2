@@ -1,13 +1,15 @@
 
 # Setting up a virtual environment
 Virtual environments will allow you to only have access to the requirements you have installed wile in the virtual environment. This prevents you from using a library that has not been mentioned in the requirements.txt. To create your own virtual environment follow the following steps
-### Installing Virtual Environments
+## Installing Virtual Environments
 Venv is included with Python versions 3.3, if you have the newest version of python it should be included. Otherwise install via pip
 > *pip install virtualenv*
 
 Next, set up the virtual environment using the following command from the project directory
 > *python3 -m venv venv*
 
+
+## Activating Virtual Environments
 Now you can activate and deactivate your venv using the following commands
 #### Windows
 >activate: *venv\Scripts\activate.bat*
