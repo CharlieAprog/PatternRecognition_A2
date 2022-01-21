@@ -1,5 +1,6 @@
+import csv
 import random
-
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -8,7 +9,7 @@ from sklearn.decomposition import PCA as sklearnPCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, make_scorer
 from sklearn.model_selection import cross_validate, train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
@@ -64,7 +65,7 @@ def preprocess_data(model, x_train, x_test, y_train):
     return x_train, x_test
 
 def determine_best_col_num(model, classifier, x_train, y_train, max_n, plot=False):
-    x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, test_size=0.3, stratify=y_train)
+    x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, test_size=0.3, stratify=y_train, random_state=69)
     f1_scores = []
     num_cols = range(2, max_n)
     for n in tqdm(num_cols, leave=False):
@@ -95,11 +96,11 @@ def classify_data(x_train, x_test, y_train, y_test):
     y_predKNN = run_model(KNN, x_train, x_test, y_train)
     knn_accuracy, knn_f1 = get_score(y_predKNN, y_test)
 
-    tree = DecisionTreeClassifier()
+    tree = DecisionTreeClassifier(random_state=69)
     y_predTree = run_model(tree, x_train, x_test, y_train)
     tree_accuracy, tree_f1 = get_score(y_predTree, y_test)
 
-    log = LogisticRegression(max_iter=400, solver='liblinear')
+    log = LogisticRegression(max_iter=400, solver='liblinear', random_state=69)
     y_predlog = run_model(log, x_train, x_test, y_train)
     log_accuracy, log_f1 = get_score(y_predlog, y_test)
 
@@ -112,17 +113,42 @@ def get_score(pred, y_test):
     f1 = round(f1_score(y_test, pred, average="macro", zero_division=0), 3)
     return accuracy, f1
 
+def calculate_kn_distance(X,k):
+
+    kn_distance = []
+    for i in range(len(X)):
+        eucl_dist = []
+        for j in range(len(X)):
+            eucl_dist.append(
+                math.sqrt(
+                    ((X[i,0] - X[j,0]) ** 2) +
+                    ((X[i,1] - X[j,1]) ** 2)))
+
+        eucl_dist.sort()
+        kn_distance.append(eucl_dist[k])
+
+    return kn_distance
+
+
 def cluster_data_search(x_train, x_test):
     complete_data = np.concatenate((x_train, x_test))
     norm = (complete_data - np.min(complete_data))/np.ptp(complete_data)
-    eps_vals = np.arange(5.5, 6, 0.01)
-    min_vals = range(2, 10)
+
+    print(np.max(norm), np.min(norm))
+    # eps_dist = calculate_kn_distance(norm,20)
+    # plt.hist(eps_dist,bins=30)
+    # plt.ylabel('n');
+    # plt.xlabel('Epsilon distance');
+    # plt.show()
+    # exit()
+    eps_vals = np.arange(0.001, 0.03, 0.001)
+    min_vals = range(10, 50)
     for eps_val in eps_vals:
         for min_sample in min_vals:
-            clustering = DBSCAN(eps = eps_val, min_samples = min_sample).fit(complete_data)
+            clustering = DBSCAN(eps = eps_val, min_samples = min_sample).fit(norm)
             labels = clustering.labels_
             clusters =len(set(labels))-(1 if -1 in labels else 0)
-            print(clusters,eps_val,min_sample )
+            print(clusters,eps_val,min_sample)
 
 def cluster_with_params(x1, x2, eps, min_samples):
     complete_data = np.concatenate((x1, x2))
@@ -141,8 +167,8 @@ def main():
     #------------Data Analysis------------#
     column_names = [f'gene_{i}' for i in range(0, 200)]
     column_names.append('Unnamed: 0')
-    # x = pd.read_csv(f'{data_path}/data.csv').set_index('Unnamed: 0')
-    x = pd.read_csv(f'{data_path}/data.csv',usecols=column_names).set_index('Unnamed: 0')
+    x = pd.read_csv(f'{data_path}/data.csv').set_index('Unnamed: 0')
+    # x = pd.read_csv(f'{data_path}/data.csv',usecols=column_names).set_index('Unnamed: 0')
     y = pd.read_csv(f'{data_path}/labels.csv').set_index('Unnamed: 0').Class
     row_size, col_size = x.shape
     unique_classes = list(set(np.array(y.values)))
@@ -156,14 +182,14 @@ def main():
     pca = sklearnPCA(random_state=69)
     lda = LDA()
     KNN = KNeighborsClassifier(n_neighbors=5)
-    clf = LogisticRegression(random_state=69, max_iter=200)
+    clf = LogisticRegression(random_state=69, max_iter=200, solver='liblinear')
     # pca_components = determine_best_col_num(pca, clf, x_train.to_numpy(), y_train, 50, plot='PCA F1 Scores')
     # lda_components = determine_best_col_num(lda, clf, x_train.to_numpy(), y_train, 5, plot='LDA F1 Scores')
     # pca.set_params(n_components=pca_components)
     # lda.set_params(n_components=lda_components)
 
     #from previous experiments we found
-    pca.set_params(n_components=6)
+    pca.set_params(n_components=10)
     lda.set_params(n_components=4)
 
     pca_x_train, pca_x_test = preprocess_data(pca, x_train, x_test, y_train)
@@ -206,36 +232,51 @@ def main():
 
 
     #------------Clustering------------#
-    # print('\nclustering data...')
-    # # cluster_data_search(original_train, original_test)
-    # # cluster_data_search(reduced_train, reduced_test)
+    print('\nclustering data...')
+    # cluster_data_search(original_train, original_test)
+    cluster_data_search(reduced_train, reduced_test)
     # original_labels, original_clusters = cluster_with_params(original_train, original_test, 17.47, 8)
-    # reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 5.63, 7)
+    reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 5.63, 7)
 
     # print(f'Estimated no. of clusters for original dataset: {original_clusters}')
-    # print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
+    print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
     # original_data = np.concatenate((reduced_train, reduced_test))
-    # reduced_data = np.concatenate((reduced_train, reduced_test))
+    reduced_data = np.concatenate((reduced_train, reduced_test))
     # visualise_cluster(original_data, original_labels, dims=2, save=True,  title='Clustering with Original Data 2D')
-    # visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
     # visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
-    # visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
-    #TODO Gridsearch (crossvalidation, ensemble)
-
+    visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
+    visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
+    exit()
     #------------Grid Search------------#
-    #knn for original
-    neighbors  = range(1,31)
-    weights = ['uniform', 'distance']
-    algorithms = ['auto', 'ball_tree', 'kd_tree', 'brute']
-    ps  = [1, 2]
-    for weight in tqdm(weights, desc='weights', leave=False):
-        for p in tqdm(ps, desc='ps', leave=False):
-            for algorithm in tqdm(algorithms, desc='algorithms', leave=False):
-                for neighbor in tqdm(neighbors, desc='neighbors', leave=False):
-                    KNN = KNeighborsClassifier(n_neighbors=neighbor, weights=weight, p=p, algorithm=algorithm)
-                    scores = cross_validate(KNN, original_train, y_train, cv=10, scoring="f1", return_train_score=True)
-                    print(scores)
-                    exit()
+    # #knn for original
+    # neighbors  = range(1,31)
+    # weights = ['uniform', 'distance']
+    # algorithms = ['auto', 'ball_tree', 'kd_tree', 'brute']
+    # ps  = [1, 2]
+    # original_settings = {}
+    # original_best = 0
+    # for weight in tqdm(weights, desc='weights', leave=False):
+    #     for p in tqdm(ps, desc='ps', leave=False):
+    #         for algorithm in tqdm(algorithms, desc='algorithms', leave=False):
+    #             for neighbor in tqdm(neighbors, desc='neighbors', leave=False):
+    #                 KNN = KNeighborsClassifier(n_neighbors=neighbor, weights=weight, p=p, algorithm=algorithm)
+    #                 scores = cross_validate(KNN, original_train, y_train, cv=10, scoring=make_scorer(f1_score, average='weighted') , return_train_score=True)
+    #                 ave_score = np.mean(scores['test_score'])
+
+    #                 if ave_score > original_best:
+    #                     original_best = ave_score
+    #                     original_settings = {
+    #                         'weights': weight,
+    #                         'p': p,
+    #                         'algorithm': algorithm,
+    #                         'neightbor': neighbor,
+    #                         'f1_score': original_best,
+    #                         }
+    # with open('../plots/numeric/original_settings.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
+    #     w = csv.DictWriter(f, original_settings.keys())
+    #     w.writeheader()
+    #     w.writerow(original_settings)
+
 
 
     #logregression for reduced
