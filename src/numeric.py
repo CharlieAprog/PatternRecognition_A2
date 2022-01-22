@@ -132,20 +132,20 @@ def calculate_kn_distance(X,k):
 
 def cluster_data_search(x_train, x_test):
     complete_data = np.concatenate((x_train, x_test))
-    norm = (complete_data - np.min(complete_data))/np.ptp(complete_data)
+    #norm = (complete_data - np.min(complete_data))/np.ptp(complete_data)
 
-    print(np.max(norm), np.min(norm))
+    #print(np.max(norm), np.min(norm))
     # eps_dist = calculate_kn_distance(norm,20)
     # plt.hist(eps_dist,bins=30)
     # plt.ylabel('n');
     # plt.xlabel('Epsilon distance');
     # plt.show()
     # exit()
-    eps_vals = np.arange(0.001, 0.03, 0.001)
+    eps_vals = np.arange(1, 10, 0.5)
     min_vals = range(10, 50)
     for eps_val in eps_vals:
         for min_sample in min_vals:
-            clustering = DBSCAN(eps = eps_val, min_samples = min_sample).fit(norm)
+            clustering = DBSCAN(eps = eps_val, min_samples = min_sample).fit(complete_data)
             labels = clustering.labels_
             clusters =len(set(labels))-(1 if -1 in labels else 0)
             print(clusters,eps_val,min_sample)
@@ -234,9 +234,9 @@ def main():
     #------------Clustering------------#
     print('\nclustering data...')
     # cluster_data_search(original_train, original_test)
-    cluster_data_search(reduced_train, reduced_test)
+    # cluster_data_search(reduced_train, reduced_test)
     # original_labels, original_clusters = cluster_with_params(original_train, original_test, 17.47, 8)
-    reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 5.63, 7)
+    reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 2.5, 15)
 
     # print(f'Estimated no. of clusters for original dataset: {original_clusters}')
     print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
