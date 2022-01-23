@@ -1,10 +1,10 @@
-import csv
 import random
 import math
 import matplotlib.pyplot as plt
+import csv
 import numpy as np
 import pandas as pd
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import DBSCAN, KMeans
 from sklearn.decomposition import PCA as sklearnPCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.ensemble import RandomForestClassifier
@@ -135,14 +135,14 @@ def cluster_data_search(x_train, x_test):
     norm = (complete_data - np.min(complete_data))/np.ptp(complete_data)
 
     print(np.max(norm), np.min(norm))
-    # eps_dist = calculate_kn_distance(norm,20)
+    # eps_dist = calculate_kn_distance(norm,4)
     # plt.hist(eps_dist,bins=30)
     # plt.ylabel('n');
     # plt.xlabel('Epsilon distance');
     # plt.show()
-    # exit()
-    eps_vals = np.arange(0.001, 0.03, 0.001)
-    min_vals = range(10, 50)
+
+    eps_vals = np.arange(0.0001, 0.006, 0.0001)
+    min_vals = range(3, 6)
     for eps_val in eps_vals:
         for min_sample in min_vals:
             clustering = DBSCAN(eps = eps_val, min_samples = min_sample).fit(norm)
@@ -157,6 +157,12 @@ def cluster_with_params(x1, x2, eps, min_samples):
     clusters =len(set(labels))-(1 if -1 in labels else 0)
     return labels, clusters
 
+def k_means_clustering(x1, x2):
+    complete_data = np.concatenate((x1, x2))
+    kmeans = KMeans(n_clusters=5, random_state=69).fit(complete_data)
+    labels = kmeans.labels_
+    clusters =len(set(labels))-(1 if -1 in labels else 0)
+    return labels, clusters
 
 
 def main():
@@ -234,18 +240,19 @@ def main():
     #------------Clustering------------#
     print('\nclustering data...')
     # cluster_data_search(original_train, original_test)
-    cluster_data_search(reduced_train, reduced_test)
-    # original_labels, original_clusters = cluster_with_params(original_train, original_test, 17.47, 8)
-    reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 5.63, 7)
+    # cluster_data_search(reduced_train, reduced_test)
+    original_labels, original_clusters = k_means_clustering(original_train, original_test)
+    print(original_labels)
+    # reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 5.63, 7)
 
-    # print(f'Estimated no. of clusters for original dataset: {original_clusters}')
-    print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
-    # original_data = np.concatenate((reduced_train, reduced_test))
-    reduced_data = np.concatenate((reduced_train, reduced_test))
-    # visualise_cluster(original_data, original_labels, dims=2, save=True,  title='Clustering with Original Data 2D')
-    # visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
-    visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
-    visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
+    print(f'Estimated no. of clusters for original dataset: {original_clusters}')
+    # print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
+    original_data = np.concatenate((reduced_train, reduced_test))
+    # reduced_data = np.concatenate((reduced_train, reduced_test))
+    visualise_cluster(original_data, original_labels, dims=2, save=True,  title='Clustering with Original Data 2D')
+    visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
+    # visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
+    # visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
     exit()
     #------------Grid Search------------#
     # #knn for original
