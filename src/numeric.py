@@ -134,26 +134,15 @@ def cluster_data_search(x_train, x_test):
     complete_data = np.concatenate((x_train, x_test))
     #norm = (complete_data - np.min(complete_data))/np.ptp(complete_data)
 
-<<<<<<< HEAD
-    print(np.max(norm), np.min(norm))
-    # eps_dist = calculate_kn_distance(norm,4)
-=======
     #print(np.max(norm), np.min(norm))
     # eps_dist = calculate_kn_distance(norm,20)
->>>>>>> 9c53b37c42679fa2f376ef35c9b94c19e79b1754
     # plt.hist(eps_dist,bins=30)
     # plt.ylabel('n');
     # plt.xlabel('Epsilon distance');
     # plt.show()
-<<<<<<< HEAD
-
-    eps_vals = np.arange(0.0001, 0.006, 0.0001)
-    min_vals = range(3, 6)
-=======
     # exit()
     eps_vals = np.arange(1, 10, 0.5)
     min_vals = range(10, 50)
->>>>>>> 9c53b37c42679fa2f376ef35c9b94c19e79b1754
     for eps_val in eps_vals:
         for min_sample in min_vals:
             clustering = DBSCAN(eps = eps_val, min_samples = min_sample).fit(complete_data)
@@ -252,19 +241,18 @@ def main():
     print('\nclustering data...')
     # cluster_data_search(original_train, original_test)
     # cluster_data_search(reduced_train, reduced_test)
-    original_labels, original_clusters = k_means_clustering(original_train, original_test)
-    print(original_labels)
-    # reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 5.63, 7)
+    # original_labels, original_clusters = k_means_clustering(original_train, original_test)
+    # print(original_labels)
+    # # reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 5.63, 7)
 
-    print(f'Estimated no. of clusters for original dataset: {original_clusters}')
-    # print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
-    original_data = np.concatenate((reduced_train, reduced_test))
+    # print(f'Estimated no. of clusters for original dataset: {original_clusters}')
+    # # print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
+    # original_data = np.concatenate((reduced_train, reduced_test))
     # reduced_data = np.concatenate((reduced_train, reduced_test))
-    visualise_cluster(original_data, original_labels, dims=2, save=True,  title='Clustering with Original Data 2D')
-    visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
+    # visualise_cluster(original_data, original_labels, dims=2, save=True,  title='Clustering with Original Data 2D')
+    # visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
     # visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
     # visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
-    exit()
     #------------Grid Search------------#
     # #knn for original
     # neighbors  = range(1,31)
