@@ -132,20 +132,31 @@ def calculate_kn_distance(X,k):
 
 def cluster_data_search(x_train, x_test):
     complete_data = np.concatenate((x_train, x_test))
-    norm = (complete_data - np.min(complete_data))/np.ptp(complete_data)
+    #norm = (complete_data - np.min(complete_data))/np.ptp(complete_data)
 
+<<<<<<< HEAD
     print(np.max(norm), np.min(norm))
     # eps_dist = calculate_kn_distance(norm,4)
+=======
+    #print(np.max(norm), np.min(norm))
+    # eps_dist = calculate_kn_distance(norm,20)
+>>>>>>> 9c53b37c42679fa2f376ef35c9b94c19e79b1754
     # plt.hist(eps_dist,bins=30)
     # plt.ylabel('n');
     # plt.xlabel('Epsilon distance');
     # plt.show()
+<<<<<<< HEAD
 
     eps_vals = np.arange(0.0001, 0.006, 0.0001)
     min_vals = range(3, 6)
+=======
+    # exit()
+    eps_vals = np.arange(1, 10, 0.5)
+    min_vals = range(10, 50)
+>>>>>>> 9c53b37c42679fa2f376ef35c9b94c19e79b1754
     for eps_val in eps_vals:
         for min_sample in min_vals:
-            clustering = DBSCAN(eps = eps_val, min_samples = min_sample).fit(norm)
+            clustering = DBSCAN(eps = eps_val, min_samples = min_sample).fit(complete_data)
             labels = clustering.labels_
             clusters =len(set(labels))-(1 if -1 in labels else 0)
             print(clusters,eps_val,min_sample)
@@ -280,15 +291,44 @@ def main():
     #                         'f1_score': original_best,
     #                         }
     # with open('../plots/numeric/original_settings.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
-    #     w = csv.DictWriter(f, original_settings.keys())
-    #     w.writeheader()
-    #     w.writerow(original_settings)
+    # w = csv.DictWriter(f, original_settings.keys())
+    # w.writeheader()
+    # w.writerow(original_settings)
 
 
 
     #logregression for reduced
 
+
+    solvers = ['newton-cg', 'lbfgs', 'liblinear']
+    penalties = ['none', 'l1', 'l2', 'elasticnet']
+    C_lrs = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100]
+
+    original_settings = {}
+    original_best = 0
+    for solver in tqdm(solvers, desc='solvers', leave=False):
+        for penalty in tqdm(penalties, desc='penalties', leave=False):
+            for C_lr in tqdm(C_lrs, desc='C_lrs', leave=False):
+                log = LogisticRegression(max_iter=400, solver=solver, C = C_lr, penalty = penalty, random_state=69)
+                scores = cross_validate(log, original_train, y_train, cv=10, scoring=make_scorer(f1_score, average='weighted') , return_train_score=True)
+                ave_score = np.mean(scores['test_score'])
+
+                if ave_score > original_best:
+                    original_best = ave_score
+                    original_settings = {
+                        'solver': solver,
+                        'penalty': penalty,
+                        'C_lr': C_lr,
+                        'f1_score': original_best,
+                        }
+                    print(original_settings)
+    with open('../plots/numeric/reduced_settings_lr.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
+        w = csv.DictWriter(f, original_settings.keys())
+        w.writeheader()
+        w.writerow(original_settings)
+
     #------------Ensemble------------#
+
 
 
 
