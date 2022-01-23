@@ -244,9 +244,9 @@ def main():
     reduced_data = np.concatenate((reduced_train, reduced_test))
     # visualise_cluster(original_data, original_labels, dims=2, save=True,  title='Clustering with Original Data 2D')
     # visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
-    visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
-    visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
-    exit()
+    # visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
+    # visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
+    # exit()
     #------------Grid Search------------#
     # #knn for original
     # neighbors  = range(1,31)
@@ -273,15 +273,43 @@ def main():
     #                         'f1_score': original_best,
     #                         }
     # with open('../plots/numeric/original_settings.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
-    #     w = csv.DictWriter(f, original_settings.keys())
-    #     w.writeheader()
-    #     w.writerow(original_settings)
+    # w = csv.DictWriter(f, original_settings.keys())
+    # w.writeheader()
+    # w.writerow(original_settings)
 
 
 
     #logregression for reduced
 
     #------------Ensemble------------#
+    
+    solvers = ['newton-cg', 'lbfgs', 'liblinear']
+    penalties = ['none', 'l1', 'l2', 'elasticnet']
+    C_lrs = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100]
+
+    original_settings = {}
+    original_best = 0
+    for solver in tqdm(solvers, desc='solvers', leave=False):
+        for penalty in tqdm(penalties, desc='penalties', leave=False):
+            for C_lr in tqdm(C_lrs, desc='C_lrs', leave=False):
+                log = LogisticRegression(max_iter=400, solver=solver, C = C_lr, penalty = penalty, random_state=69)
+                scores = cross_validate(log, original_train, y_train, cv=10, scoring=make_scorer(f1_score, average='weighted') , return_train_score=True)
+                ave_score = np.mean(scores['test_score'])
+
+                if ave_score > original_best:
+                    original_best = ave_score
+                    original_settings = {
+                        'solver': solver,
+                        'penalty': penalty,
+                        'C_lr': C_lr,
+                        'f1_score': original_best,
+                        }
+                    print(original_settings)
+    with open('../plots/numeric/reduced_settings_lr.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
+        w = csv.DictWriter(f, original_settings.keys())
+        w.writeheader()
+        w.writerow(original_settings)
+
 
 
 
