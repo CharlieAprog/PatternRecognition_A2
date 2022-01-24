@@ -1,0 +1,2 @@
+solver,penalty,C_lr,f1_score
+liblinear,l2,1e-05,1.0
