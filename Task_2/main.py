@@ -1,42 +1,50 @@
 import random
 
-def label_unlabeled(labeled_data, unlabeled_data, clustering_algorithm, supervised_learning_algorithm):
-    # Input: labeled_data ((x1, y1), ..., (xl, yl),)
-    #        unlabeled_data (x(l+1), ..., x(l+u))
-    #        clustering_algorithm (xs -> clusters ([[cluster_1_idx_1, cluster_1_idx_2, ...], [cluster_2_idx_1, ...], ...]))
-    #        supervised_learning_algorithm (training_data -> predictor_object)
+from clustering_algos import propagating_1_nn
+from sklearn import svm
 
-    # Output: labels for the unlabeled_data
+# def label_unlabeled(labeled_data, unlabeled_data, clustering_algorithm, supervised_learning_algorithm):
+#     # Input: labeled_data ((x1, y1), ..., (xl, yl),)
+#     #        unlabeled_data (x(l+1), ..., x(l+u))
+#     #        clustering_algorithm (xs -> clusters ([[cluster_1_idx_1, cluster_1_idx_2, ...], [cluster_2_idx_1, ...], ...]))
+#     #        supervised_learning_algorithm (training_data -> predictor_object)
 
-    labels_unlabeled_data = [-1 for _ in unlabeled_data]
-    xs = [x for (x, _) in labeled_data] + unlabeled_data
-    clusters = clustering_algorithm(xs)
-    for cluster in clusters:
-        labeled_instances = [labeled_data[idx] for idx in cluster if idx < len(labeled_data)]
-        supervised_predictor = supervised_learning_algorithm(labeled_instances)
-        unlabeled_instance_indices = [idx - len(labeled_data) for idx in cluster if idx >= len(labeled_data)]
-        unlabeled_instances = [unlabeled_data[idx] for idx in unlabeled_instance_indices]
-        labels = supervised_predictor(unlabeled_instances)
-        for i, label in enumerate(labels):
-            idx = unlabeled_instance_indices[i]
-            labels_unlabeled_data[idx] = label
+#     # Output: labels for the unlabeled_data
 
-    return labels_unlabeled_data
+#     labels_unlabeled_data = [-1 for _ in unlabeled_data]
+#     xs = [x for (x, _) in labeled_data] + unlabeled_data
+#     clusters = clustering_algorithm(xs)
+#     for cluster in clusters:
+#         labeled_instances = [labeled_data[idx] for idx in cluster if idx < len(labeled_data)]
+#         supervised_predictor = supervised_learning_algorithm(labeled_instances)
+#         unlabeled_instance_indices = [idx - len(labeled_data) for idx in cluster if idx >= len(labeled_data)]
+#         unlabeled_instances = [unlabeled_data[idx] for idx in unlabeled_instance_indices]
+#         labels = supervised_predictor(unlabeled_instances)
+#         for i, label in enumerate(labels):
+#             idx = unlabeled_instance_indices[i]
+#             labels_unlabeled_data[idx] = label
 
-def semi_supervised_learning(labeled_data, unlabeled_data, clustering_algorithm, supervised_learning_algorithm):
-    labels_unlabeled_data = label_unlabeled(labeled_data, unlabeled_data, clustering_algorithm, supervised_learning_algorithm)
-    newly_labeled_data = [(unlabeled_data[i], labels_unlabeled_data[i]) for i in range(len(unlabeled_data))]
-    training_data = labeled_data + newly_labeled_data
-    predictor = supervised_learning_algorithm(training_data)
+#     return labels_unlabeled_data
+
+def semi_supervised_learning(labeled_data, unlabeled_data):#, supervised_learning_algorithm):
+    training_data = propagating_1_nn(labeled_data, unlabeled_data)
+    # labels_unlabeled_data = label_unlabeled(labeled_data, unlabeled_data, clustering_algorithm, supervised_learning_algorithm)
+    # newly_labeled_data = [(unlabeled_data[i], labels_unlabeled_data[i]) for i in range(len(unlabeled_data))]
+    # training_data = labeled_data + newly_labeled_data
+    # predictor = supervised_learning_algorithm(training_data)
+    inputs = [x for x, _ in training_data]
+    targets = [y for _, y in training_data]
+    predictor = svm.SVC()
+    predictor.fit(inputs, targets)
     return predictor
 
 def supervised_learning(labeled_data, supervised_learning_algorithm):
-    predictor = supervised_learning_algorithm(labeled_data)
+    inputs = [x for x, _ in labeled_data]
+    targets = [y for _, y in labeled_data]
+    predictor = svm.SVC()
+    predictor.fit(inputs, targets)
     return predictor
-
-def prepare_data():
-    pass
-
+    
 def read_data(file_path)
     with open(file_path, 'r') as f:
         lines = f.readlines()
