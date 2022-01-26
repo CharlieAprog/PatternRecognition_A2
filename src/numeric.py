@@ -282,7 +282,7 @@ def main():
             for algorithm in tqdm(algorithms, desc='algorithms', leave=False):
                 for neighbor in tqdm(neighbors, desc='neighbors', leave=False):
                     KNN = KNeighborsClassifier(n_neighbors=neighbor, weights=weight, p=p, algorithm=algorithm)
-                    scores = cross_validate(KNN, original_train, y_train, cv=10, scoring=make_scorer(f1_score, average='weighted') , return_train_score=True)
+                    scores = cross_validate(KNN, original_train, y_train, cv=10, return_train_score=True)
                     ave_score = np.mean(scores['test_score'])
 
                     if ave_score > original_best:
@@ -292,7 +292,7 @@ def main():
                             'p': p,
                             'algorithm': algorithm,
                             'neightbor': neighbor,
-                            'f1_score': original_best,
+                            'accuracy': original_best,
                             }
     with open('../plots/numeric/original_settings.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
         w = csv.DictWriter(f, original_settings.keys())
@@ -319,7 +319,7 @@ def main():
     #                     'solver': solver,
     #                     'penalty': penalty,
     #                     'C_lr': C_lr,
-    #                     'f1_score': reduced_best,
+    #                     'accuracy': reduced_best,
     #                     }
     #                 print(reduced_settings)
     # with open('../plots/numeric/reduced_settings_lr.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
