@@ -193,7 +193,7 @@ def main():
     visualise_data(x, y, save=True, dims=2, title='visualisation of numeric data 2D')
     visualise_data(x, y, save=True, dims=3, title='visualisation of numeric data 3D')
 
-    exit()
+    
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, stratify=y, random_state=69)
 
     #------------Feature Extraction------------#
@@ -271,33 +271,33 @@ def main():
     #------------Grid Search------------#
 
     #######---knn for original---#######
-    neighbors  = range(1,31)
-    weights = ['uniform', 'distance']
-    algorithms = ['auto', 'ball_tree', 'kd_tree', 'brute']
-    ps  = [1, 2]
-    original_settings = {}
-    original_best = 0
-    for weight in tqdm(weights, desc='weights', leave=False):
-        for p in tqdm(ps, desc='ps', leave=False):
-            for algorithm in tqdm(algorithms, desc='algorithms', leave=False):
-                for neighbor in tqdm(neighbors, desc='neighbors', leave=False):
-                    KNN = KNeighborsClassifier(n_neighbors=neighbor, weights=weight, p=p, algorithm=algorithm)
-                    scores = cross_validate(KNN, original_train, y_train, cv=10, return_train_score=True)
-                    ave_score = np.mean(scores['test_score'])
+    # neighbors  = [1,31]
+    # weights = ['uniform','distance']
+    # algorithms = ['ball_tree', 'kd_tree', 'brute']
+    # ps  = [1,2]
+    # original_settings = {}
+    # original_best = 0
+    # for weight in tqdm(weights, desc='weights', leave=False):
+    #     for p in tqdm(ps, desc='ps', leave=False):
+    #         for algorithm in tqdm(algorithms, desc='algorithms', leave=False):
+    #             for neighbor in tqdm(neighbors, desc='neighbors', leave=False):
+    #                 KNN = KNeighborsClassifier(n_neighbors=neighbor, weights=weight, p=p, algorithm=algorithm)
+    #                 scores = cross_validate(KNN, original_train, y_train, cv=10, return_train_score=True)
+    #                 ave_score = np.mean(scores['test_score'])
 
-                    if ave_score > original_best:
-                        original_best = ave_score
-                        original_settings = {
-                            'weights': weight,
-                            'p': p,
-                            'algorithm': algorithm,
-                            'neightbor': neighbor,
-                            'accuracy': original_best,
-                            }
-    with open('../plots/numeric/original_settings.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
-        w = csv.DictWriter(f, original_settings.keys())
-        w.writeheader()
-        w.writerow(original_settings)
+    #                 if ave_score > original_best:
+    #                     original_best = ave_score
+    #                     original_settings = {
+    #                         'weights': weight,
+    #                         'p': p,
+    #                         'algorithm': algorithm,
+    #                         'neightbor': neighbor,
+    #                         'accuracy': original_best,
+    #                         }
+    # with open('../plots/numeric/original_settings.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
+    #     w = csv.DictWriter(f, original_settings.keys())
+    #     w.writeheader()
+    #     w.writerow(original_settings)
 
     #######---logregression for reduced---#######
     # solvers = ['newton-cg', 'lbfgs', 'liblinear']
