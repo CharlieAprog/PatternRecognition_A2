@@ -22,33 +22,38 @@ from tqdm import tqdm
 
 
 def make_scatter_plot(data, labels, title, save_plot=False, dimension=2, cluster=None):
-    if not any(cluster):
-        classes = list(set(np.array(labels.values)))
     fig = plt.figure()
     if dimension == 3:
+
         ax = fig.add_subplot(projection='3d')
-        if any(cluster):
-            ax.scatter(data[0], data[1], data[2], c=cluster)
-        else:
+        ax.set_zlabel('PC3')
+
+        if cluster == None:
+            classes = list(set(np.array(labels.values)))
             for class_ in classes:
                 ax.scatter(data[labels==class_][0], data[labels==class_][1], data[labels==class_][2], label=class_)
+        else:
+            ax.scatter(data[0], data[1], data[2], c=cluster)
+
     else:
         ax = fig.add_subplot()
-        if any(cluster):
-            ax.scatter(data[0], data[1], c=cluster)
-        else:
+        if cluster == None:
+            classes = list(set(np.array(labels.values)))
             for class_ in classes:
                 ax.scatter(data[labels==class_][0], data[labels==class_][1], label=class_)
+        else:
+            ax.scatter(data[0], data[1], c=cluster)
 
     plt.title(title)
     plt.legend()
+    plt.xlabel('PC1')
+    plt.ylabel('PC2')
     if save_plot:
         plt.savefig(f'../plots/numeric/{title}.jpg')
     else:
         plt.show()
 
-def visualise_data(x, y, dims=2, save=False):
-    title = 'visualisation of numeric data'
+def visualise_data(x, y, dims=2, save=False, title=''):
     pca = sklearnPCA(n_components=dims) #2-dimensional PCA
     pca_transformed = pd.DataFrame(pca.fit_transform(x))
     pca_transformed.index = y.index
@@ -185,7 +190,10 @@ def main():
     unique_classes = list(set(np.array(y.values)))
     print(f'number of rows: {row_size}\nnumber of columns: {col_size}')
     print(f'unique classes: {unique_classes}')
-    # visualise_data(x, y, save=False, dimensions=3)
+    visualise_data(x, y, save=True, dims=2, title='visualisation of numeric data 2D')
+    visualise_data(x, y, save=True, dims=3, title='visualisation of numeric data 3D')
+
+    exit()
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, stratify=y, random_state=69)
 
     #------------Feature Extraction------------#
@@ -258,74 +266,66 @@ def main():
     # visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
     # visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
     # visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
+
+
     #------------Grid Search------------#
-    # #knn for original
-    # neighbors  = range(1,31)
-    # weights = ['uniform', 'distance']
-    # algorithms = ['auto', 'ball_tree', 'kd_tree', 'brute']
-    # ps  = [1, 2]
-    # original_settings = {}
-    # original_best = 0
-    # for weight in tqdm(weights, desc='weights', leave=False):
-    #     for p in tqdm(ps, desc='ps', leave=False):
-    #         for algorithm in tqdm(algorithms, desc='algorithms', leave=False):
-    #             for neighbor in tqdm(neighbors, desc='neighbors', leave=False):
-    #                 KNN = KNeighborsClassifier(n_neighbors=neighbor, weights=weight, p=p, algorithm=algorithm)
-    #                 scores = cross_validate(KNN, original_train, y_train, cv=10, scoring=make_scorer(f1_score, average='weighted') , return_train_score=True)
-    #                 ave_score = np.mean(scores['test_score'])
 
-    #                 if ave_score > original_best:
-    #                     original_best = ave_score
-    #                     original_settings = {
-    #                         'weights': weight,
-    #                         'p': p,
-    #                         'algorithm': algorithm,
-    #                         'neightbor': neighbor,
-    #                         'f1_score': original_best,
-    #                         }
-    # with open('../plots/numeric/original_settings.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
-    # w = csv.DictWriter(f, original_settings.keys())
-    # w.writeheader()
-    # w.writerow(original_settings)
+    #######---knn for original---#######
+    neighbors  = range(1,31)
+    weights = ['uniform', 'distance']
+    algorithms = ['auto', 'ball_tree', 'kd_tree', 'brute']
+    ps  = [1, 2]
+    original_settings = {}
+    original_best = 0
+    for weight in tqdm(weights, desc='weights', leave=False):
+        for p in tqdm(ps, desc='ps', leave=False):
+            for algorithm in tqdm(algorithms, desc='algorithms', leave=False):
+                for neighbor in tqdm(neighbors, desc='neighbors', leave=False):
+                    KNN = KNeighborsClassifier(n_neighbors=neighbor, weights=weight, p=p, algorithm=algorithm)
+                    scores = cross_validate(KNN, original_train, y_train, cv=10, scoring=make_scorer(f1_score, average='weighted') , return_train_score=True)
+                    ave_score = np.mean(scores['test_score'])
 
-
-
-    #logregression for reduced
-    array_sum = np.sum(reduced_train)
-    print(np.isnan(np.sum(reduced_train)))
-    print(np.isinf(np.sum(reduced_train)))
-
-
-
-
-    solvers = ['newton-cg', 'lbfgs', 'liblinear']
-    penalties = ['none', 'l1', 'l2', 'elasticnet']
-    C_lrs = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100]
-
-    reduced_settings = {}
-    reduced_best = 0
-    for solver in tqdm(solvers, desc='solvers', leave=False):
-        for penalty in tqdm(penalties, desc='penalties', leave=False):
-            for C_lr in tqdm(C_lrs, desc='C_lrs', leave=False):
-                log = LogisticRegression(max_iter=400, solver=solver, C = C_lr, penalty = penalty, random_state=69)
-                scores = cross_validate(log, reduced_train, y_train, cv=10, return_train_score=True)
-                ave_score = np.mean(scores['test_score'])
-
-                if ave_score > reduced_best:
-                    reduced_best = ave_score
-                    reduced_settings = {
-                        'solver': solver,
-                        'penalty': penalty,
-                        'C_lr': C_lr,
-                        'f1_score': reduced_best,
-                        }
-                    print(reduced_settings)
-    with open('../plots/numeric/reduced_settings_lr.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
-        w = csv.DictWriter(f, reduced_settings.keys())
+                    if ave_score > original_best:
+                        original_best = ave_score
+                        original_settings = {
+                            'weights': weight,
+                            'p': p,
+                            'algorithm': algorithm,
+                            'neightbor': neighbor,
+                            'f1_score': original_best,
+                            }
+    with open('../plots/numeric/original_settings.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
+        w = csv.DictWriter(f, original_settings.keys())
         w.writeheader()
-        w.writerow(reduced_settings)
+        w.writerow(original_settings)
 
-    #------------Ensemble------------#
+    #######---logregression for reduced---#######
+    # solvers = ['newton-cg', 'lbfgs', 'liblinear']
+    # penalties = ['none', 'l1', 'l2', 'elasticnet']
+    # C_lrs = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100]
+
+    # reduced_settings = {}
+    # reduced_best = 0
+    # for solver in tqdm(solvers, desc='solvers', leave=False):
+    #     for penalty in tqdm(penalties, desc='penalties', leave=False):
+    #         for C_lr in tqdm(C_lrs, desc='C_lrs', leave=False):
+    #             log = LogisticRegression(max_iter=400, solver=solver, C = C_lr, penalty = penalty, random_state=69)
+    #             scores = cross_validate(log, reduced_train, y_train, cv=10, return_train_score=True)
+    #             ave_score = np.mean(scores['test_score'])
+
+    #             if ave_score > reduced_best:
+    #                 reduced_best = ave_score
+    #                 reduced_settings = {
+    #                     'solver': solver,
+    #                     'penalty': penalty,
+    #                     'C_lr': C_lr,
+    #                     'f1_score': reduced_best,
+    #                     }
+    #                 print(reduced_settings)
+    # with open('../plots/numeric/reduced_settings_lr.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
+    #     w = csv.DictWriter(f, reduced_settings.keys())
+    #     w.writeheader()
+    #     w.writerow(reduced_settings)
 
 
 

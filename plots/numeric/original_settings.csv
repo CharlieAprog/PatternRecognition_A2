@@ -1,2 +1,2 @@
-weights,p,algorithm,neightbor
-uniform,1,auto,8
+weights,p,algorithm,neightbor,f1_score
+uniform,1,auto,3,0.9981825288254835
