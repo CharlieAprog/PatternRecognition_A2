@@ -37,7 +37,7 @@ def supervised_learning(labeled_data, supervised_learning_algorithm):
 def prepare_data():
     pass
 
-def read_data(file_path)
+def read_data(file_path):
     with open(file_path, 'r') as f:
         lines = f.readlines()
 
@@ -82,4 +82,3 @@ def full_script():
         labeled_train_data_per_class, unlabeled_train_data_per_class = split_data(train_data_per_class, [0.3, 0.7])
         labeled_train_data, unlabeled_train_data, test_data += labeled_train_data_per_class, unlabeled_train_data_per_class, test_data_per_class
     predictor = semi_supervised_learning(labeled_train_data, [x for (x, _) in unlabeled_train_data], clustering_algorithm, supervised_learning_algorithm)
-    
