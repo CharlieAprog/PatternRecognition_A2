@@ -1,2 +1,2 @@
-solver,penalty,C_lr,f1_score
+solver,penalty,C_lr,accuracy
 liblinear,l2,1e-05,1.0

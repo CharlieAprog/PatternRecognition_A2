@@ -1,2 +1,2 @@
-weights,p,algorithm,neightbor,f1_score
-uniform,1,auto,3,0.9981825288254835
+weights,p,algorithm,neightbor,accuracy
+uniform,1,ball_tree,3,0.9982142857142857
