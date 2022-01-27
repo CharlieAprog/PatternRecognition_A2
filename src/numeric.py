@@ -177,7 +177,7 @@ def brc_clustering(x1, x2):
 
 def main():
     random.seed(420)
-    data_path = f'../data/Genes/Original'
+    data_path = f'../data/Genes'
     print('reading data...')
 
     #------------Data Analysis------------#
