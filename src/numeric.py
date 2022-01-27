@@ -9,10 +9,9 @@ import matplotlib.pyplot as plt
 import csv
 import numpy as np
 import pandas as pd
-from sklearn.cluster import DBSCAN, KMeans
+from sklearn.cluster import DBSCAN, KMeans, Birch
 from sklearn.decomposition import PCA as sklearnPCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, make_scorer
 from sklearn.model_selection import cross_validate, train_test_split
@@ -21,14 +20,14 @@ from sklearn.tree import DecisionTreeClassifier
 from tqdm import tqdm
 
 
-def make_scatter_plot(data, labels, title, save_plot=False, dimension=2, cluster=None):
+def make_scatter_plot(data, labels, title, save_plot=False, dimension=2, cluster=[]):
     fig = plt.figure()
     if dimension == 3:
 
         ax = fig.add_subplot(projection='3d')
         ax.set_zlabel('PC3')
 
-        if cluster == None:
+        if len(cluster) == 0:
             classes = list(set(np.array(labels.values)))
             for class_ in classes:
                 ax.scatter(data[labels==class_][0], data[labels==class_][1], data[labels==class_][2], label=class_)
@@ -37,7 +36,7 @@ def make_scatter_plot(data, labels, title, save_plot=False, dimension=2, cluster
 
     else:
         ax = fig.add_subplot()
-        if cluster == None:
+        if len(cluster) == 0:
             classes = list(set(np.array(labels.values)))
             for class_ in classes:
                 ax.scatter(data[labels==class_][0], data[labels==class_][1], label=class_)
@@ -167,10 +166,11 @@ def cluster_with_params(x1, x2, eps, min_samples):
     clusters =len(set(labels))-(1 if -1 in labels else 0)
     return labels, clusters
 
-def k_means_clustering(x1, x2):
+def brc_clustering(x1, x2):
     complete_data = np.concatenate((x1, x2))
-    kmeans = KMeans(n_clusters=5, random_state=69).fit(complete_data)
-    labels = kmeans.labels_
+    brc = Birch(n_clusters=5).fit(complete_data)
+    labels = brc.labels_
+    print(labels)
     clusters =len(set(labels))-(1 if -1 in labels else 0)
     return labels, clusters
 
@@ -181,8 +181,7 @@ def main():
     print('reading data...')
 
     #------------Data Analysis------------#
-    column_names = [f'gene_{i}' for i in range(0, 200)]
-    column_names.append('Unnamed: 0')
+    column_names = [f'gene_{i}' for i in range(0, 200)].append('Unnamed: 0')
     x = pd.read_csv(f'{data_path}/data.csv').set_index('Unnamed: 0')
     # x = pd.read_csv(f'{data_path}/data.csv',usecols=column_names).set_index('Unnamed: 0')
     y = pd.read_csv(f'{data_path}/labels.csv').set_index('Unnamed: 0').Class
@@ -190,10 +189,9 @@ def main():
     unique_classes = list(set(np.array(y.values)))
     print(f'number of rows: {row_size}\nnumber of columns: {col_size}')
     print(f'unique classes: {unique_classes}')
-    visualise_data(x, y, save=True, dims=2, title='visualisation of numeric data 2D')
-    visualise_data(x, y, save=True, dims=3, title='visualisation of numeric data 3D')
+    # visualise_data(x, y, save=True, dims=2, title='visualisation of numeric data 2D')
+    # visualise_data(x, y, save=True, dims=3, title='visualisation of numeric data 3D')
 
-    exit()
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, stratify=y, random_state=69)
 
     #------------Feature Extraction------------#
@@ -254,18 +252,18 @@ def main():
     print('\nclustering data...')
     # cluster_data_search(original_train, original_test)
     # cluster_data_search(reduced_train, reduced_test)
-    # original_labels, original_clusters = k_means_clustering(original_train, original_test)
+    original_labels, original_clusters = brc_clustering(original_train, original_test)
     # print(original_labels)
-    # # reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 5.63, 7)
+    reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 3, 20)
 
-    # print(f'Estimated no. of clusters for original dataset: {original_clusters}')
-    # # print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
-    # original_data = np.concatenate((reduced_train, reduced_test))
-    # reduced_data = np.concatenate((reduced_train, reduced_test))
-    # visualise_cluster(original_data, original_labels, dims=2, save=True,  title='Clustering with Original Data 2D')
-    # visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
-    # visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
-    # visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
+    print(f'Estimated no. of clusters for original dataset: {original_clusters}')
+    print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
+    original_data = np.concatenate((original_train, original_test))
+    reduced_data = np.concatenate((reduced_train, reduced_test))
+    visualise_cluster(original_data, original_labels, dims=2, save=True,  title='Clustering with Original Data 2D')
+    visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
+    visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
+    visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
 
 
     #------------Grid Search------------#
