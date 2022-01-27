@@ -18,6 +18,7 @@ from sklearn.model_selection import cross_validate, train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from tqdm import tqdm
+from sklearn.model_selection import KFold
 
 
 def make_scatter_plot(data, labels, title, save_plot=False, dimension=2, cluster=[]):
@@ -118,38 +119,79 @@ def classify_data(x_train, x_test, y_train, y_test):
     print(f'tree accuracy: {tree_accuracy}, tree f1: {tree_f1}')
     print(f'log accuracy:{log_accuracy}, log f1: {log_f1}')
 
-def ensemble(x_train, x_test, y_train, y_test):
+def ensemble(x, y):
     KNN = KNeighborsClassifier(n_neighbors=5)
-    y_predKNN = run_model(KNN, x_train, x_test, y_train)
-    knn_accuracy, knn_f1 = get_score(y_predKNN, y_test)
+    tree = DecisionTreeClassifier(criterion='gini', splitter='best')
+    log = LogisticRegression(penalty='l2', C = 1e-05, solver='liblinear', random_state=69)
 
-    tree = DecisionTreeClassifier(random_state=69)
-    y_predTree = run_model(tree, x_train, x_test, y_train)
-    tree_accuracy, tree_f1 = get_score(y_predTree, y_test)
+    x = x.to_numpy()
+    y = y.to_numpy()
+    splits = 5
+    kf = KFold(n_splits=splits)
+    kf.get_n_splits(x)
+    avg_accuracy = []
+    
+    total_accuracies = []
+    for train_index, test_index in kf.split(x):
+        ###print("TRAIN:", train_index, "TEST:", test_index)
+        x_train, x_test = x[train_index], x[test_index]
+        y_train, y_test = y[train_index], y[test_index]
 
-    log = LogisticRegression(penalty='l2', C = 1e-05, solver='liblinear')
-    y_predlog = run_model(log, x_train, x_test, y_train)
-    log_accuracy, log_f1 = get_score(y_predlog, y_test)
+        #training
+        KNN = KNN.fit(x_train, y_train)
+        tree = tree.fit(x_train, y_train)
+        log = log.fit(x_train, y_train)
 
-    print(f'knn accuracy: {knn_accuracy}, knn f1: {knn_f1}')
-    print(f'tree accuracy: {tree_accuracy}, tree f1: {tree_f1}')
-    print(f'log accuracy:{log_accuracy}, log f1: {log_f1}')
+        predictions = []
+        testing_instances = 0
+        ###manual ensemble###
+        knn_pred = KNN.predict(x_test)
+        tree_pred = tree.predict(x_test)
+        log_pred = log.predict(x_test)
+
+        accuracies = []
+        for index in range(0, len(knn_pred)):
+            knn_prediction = knn_pred[index]  
+            tree_prediction = tree_pred[index] 
+            log_prediction = log_pred[index]   
+            ###majority vote###
+            vote = 0
+            if (knn_prediction ==  y_test[index]):
+                vote += 1
+            if(tree_prediction ==  y_test[index]):
+                vote += 1
+            if(log_prediction ==  y_test[index]):
+                vote += 1
+            if(vote >= 2):
+                accuracies.append(1)
+            else: 
+                accuracies.append(0)
+            ###print(vote, end = '')
+        ####accuracy within kfold###
+        ###print('')
+        accuracy = sum(accuracies) / len(knn_pred)
+        total_accuracies.append(accuracy)
+        ###print(f'Accuracies within split: {accuracy}')
+    ###overall accuracy###
+    accuracy = sum(total_accuracies) / splits
+
+    print(f'Ensemble: {accuracy}')
 
 def get_score(pred, y_test):
     accuracy = round(accuracy_score(y_test, pred), 3)
     f1 = round(f1_score(y_test, pred, average="macro", zero_division=0), 3)
     return accuracy, f1
 
-def calculate_kn_distance(X,k):
+def calculate_kn_distance(x,k):
 
     kn_distance = []
-    for i in range(len(X)):
+    for i in range(len(x)):
         eucl_dist = []
-        for j in range(len(X)):
+        for j in range(len(x)):
             eucl_dist.append(
                 math.sqrt(
-                    ((X[i,0] - X[j,0]) ** 2) +
-                    ((X[i,1] - X[j,1]) ** 2)))
+                    ((x[i,0] - x[j,0]) ** 2) +
+                    ((x[i,1] - x[j,1]) ** 2)))
 
         eucl_dist.sort()
         kn_distance.append(eucl_dist[k])
@@ -259,58 +301,65 @@ def main():
 
 
     #------------Classification------------#
-    print('\ntesting models...')
-    print('original dataset')
-    classify_data(original_train, original_test, y_train, y_test)
-    print('reduced data')
-    classify_data(reduced_train, reduced_test, y_train, y_test)
+    # print('\ntesting models...')
+    # print('original dataset')
+    # classify_data(original_train, original_test, y_train, y_test)
+    # print('reduced data')
+    # classify_data(reduced_train, reduced_test, y_train, y_test)
 
+    #------------Ensemble------------#
+    ###print(x.shape, '\n', y.shape)
+    # print('\nrunning ensemble')
+    # original_combined_data = np.concatenate((reduced_train, reduced_test))
+    # original_combined_labels = np.concatenate((y_train, y_test))
+    # ensemble(x, y)
+    
 
     #------------Clustering------------#
-    print('\nclustering data...')
+    # print('\nclustering data...')
     # cluster_data_search(original_train, original_test)
     # cluster_data_search(reduced_train, reduced_test)
-    original_labels, original_clusters = brc_clustering(original_train, original_test)
+    # original_labels, original_clusters = brc_clustering(original_train, original_test)
     # print(original_labels)
-    reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 3, 20)
+    # reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 3, 20)
 
-    print(f'Estimated no. of clusters for original dataset: {original_clusters}')
-    print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
-    original_data = np.concatenate((original_train, original_test))
-    reduced_data = np.concatenate((reduced_train, reduced_test))
-    visualise_cluster(original_data, original_labels, dims=2, save=True,  title='Clustering with Original Data 2D')
-    visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
-    visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
-    visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
+    # print(f'Estimated no. of clusters for original dataset: {original_clusters}')
+    # print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
+    # original_data = np.concatenate((original_train, original_test))
+    # reduced_data = np.concatenate((reduced_train, reduced_test))
+    # visualise_cluster(original_data, original_labels, dims=2, save=True,  title='Clustering with Original Data 2D')
+    # visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
+    # visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
+    # visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
 
 
     #------------Grid Search------------#
 
     #######---knn for original---#######
-    criterions = ['gini', 'entropy']
-    splitters = ['random', 'best']
-    max_features = [None, 'sqrt', 'log2']
-    original_settings = {}
-    original_best = 0
-    for criterion in tqdm(criterions, desc='criterion', leave=False):
-        for splitter in tqdm(splitters, desc='splitters', leave=False):
-            for max_feature in tqdm(max_features, desc='algorithms', leave=False):
-                tree = DecisionTreeClassifier(criterion=criterion, splitter=splitter, max_features=max_feature, random_state=69)
-                scores = cross_validate(tree, original_train, y_train, cv=10, return_train_score=True)
-                ave_score = np.mean(scores['test_score'])
+    # criterions = ['gini', 'entropy']
+    # splitters = ['random', 'best']
+    # max_features = [None, 'sqrt', 'log2']
+    # original_settings = {}
+    # original_best = 0
+    # for criterion in tqdm(criterions, desc='criterion', leave=False):
+    #     for splitter in tqdm(splitters, desc='splitters', leave=False):
+    #         for max_feature in tqdm(max_features, desc='algorithms', leave=False):
+    #             tree = DecisionTreeClassifier(criterion=criterion, splitter=splitter, max_features=max_feature, random_state=69)
+    #             scores = cross_validate(tree, original_train, y_train, cv=10, return_train_score=True)
+    #             ave_score = np.mean(scores['test_score'])
 
-                if ave_score > original_best:
-                    original_best = ave_score
-                    original_settings = {
-                        'criterion': criterion,
-                        'splitter': splitter,
-                        'max_features': max_feature,
-                        'accuracy': original_best,
-                        }
-    with open('../plots/numeric/original_settings.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
-        w = csv.DictWriter(f, original_settings.keys())
-        w.writeheader()
-        w.writerow(original_settings)
+    #             if ave_score > original_best:
+    #                 original_best = ave_score
+    #                 original_settings = {
+    #                     'criterion': criterion,
+    #                     'splitter': splitter,
+    #                     'max_features': max_feature,
+    #                     'accuracy': original_best,
+    #                     }
+    # with open('../plots/numeric/original_settings.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
+    #     w = csv.DictWriter(f, original_settings.keys())
+    #     w.writeheader()
+    #     w.writerow(original_settings)
 
     #######---logregression for reduced---#######
     # solvers = ['newton-cg', 'lbfgs', 'liblinear']
