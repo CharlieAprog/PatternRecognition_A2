@@ -1,2 +1,2 @@
-weights,p,algorithm,neightbor,accuracy
-uniform,1,ball_tree,3,0.9982142857142857
+criterion,splitter,max_features,accuracy
+gini,best,None,0.975
