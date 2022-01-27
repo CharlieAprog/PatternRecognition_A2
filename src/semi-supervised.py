@@ -1,3 +1,4 @@
+from cv2 import Subdiv2D_PREV_AROUND_DST
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
@@ -12,18 +13,19 @@ import matplotlib.pyplot as plt
 
 def plot_it(res):
     semisuper = [r['semisupervised'][0] for r in res.values()]
-    super = [r['supervised'][0] for r in res.values()]
+    super_ = [r['supervised'][0] for r in res.values()]
     jlp = [r['justlabelpropagation'][0] for r in res.values()]
     ratio_labeled = [r for r in res.keys()]
 
     plt.plot(ratio_labeled, jlp, label= 'Label Propagation Only')
     plt.plot(ratio_labeled, semisuper, label= 'Semi-supervised')
-    plt.plot(ratio_labeled, super, label= 'Supervised')
+    plt.plot(ratio_labeled, super_, label= 'Supervised')
     plt.legend(loc='lower left')
     plt.xlim(0, 1)
     plt.ylim(0, 1)
     plt.xlabel('Ratio of Labeled Data')
     plt.ylabel('Percentage Correct')
+    plt.savefig(f'../plots/semi-supervised/semi_supervised_plot.jpg')
     plt.show()
 
 def main():
@@ -71,10 +73,10 @@ def main():
         per_lr[labeled_ratio] = per_approach
 
     # prints mean, standard deviation, and standard error for the success rates.
-    for lr, pa in per_lr.items():
-        print(lr, pa)
+    # for lr, pa in per_lr.items():
+    #     print(lr, pa)
 
-    plot_it(per_lr)
+    # plot_it(per_lr)
 
 if __name__ == '__main__':
     main()

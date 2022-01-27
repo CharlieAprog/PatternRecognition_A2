@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import csv
 import numpy as np
 import pandas as pd
-from sklearn.cluster import DBSCAN, KMeans, Birch
+from sklearn.cluster import DBSCAN, KMeans, Birch, OPTICS
 from sklearn.decomposition import PCA as sklearnPCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.linear_model import LogisticRegression
@@ -113,6 +113,7 @@ def classify_data(x_train, x_test, y_train, y_test):
     y_predlog = run_model(log, x_train, x_test, y_train)
     log_accuracy, log_f1 = get_score(y_predlog, y_test)
 
+
     print(f'knn accuracy: {knn_accuracy}, knn f1: {knn_f1}')
     print(f'tree accuracy: {tree_accuracy}, tree f1: {tree_f1}')
     print(f'log accuracy:{log_accuracy}, log f1: {log_f1}')
@@ -187,7 +188,6 @@ def brc_clustering(x1, x2):
     complete_data = np.concatenate((x1, x2))
     brc = Birch(n_clusters=5).fit(complete_data)
     labels = brc.labels_
-    print(labels)
     clusters =len(set(labels))-(1 if -1 in labels else 0)
     return labels, clusters
 
@@ -259,11 +259,11 @@ def main():
 
 
     #------------Classification------------#
-    # print('\ntesting models...')
-    # print('original dataset')
-    # classify_data(original_train, original_test, y_train, y_test)
-    # print('reduced data')
-    # classify_data(reduced_train, reduced_test, y_train, y_test)
+    print('\ntesting models...')
+    print('original dataset')
+    classify_data(original_train, original_test, y_train, y_test)
+    print('reduced data')
+    classify_data(reduced_train, reduced_test, y_train, y_test)
 
 
     #------------Clustering------------#
@@ -287,33 +287,30 @@ def main():
     #------------Grid Search------------#
 
     #######---knn for original---#######
-    # neighbors  = [1,31]
-    # weights = ['uniform','distance']
-    # algorithms = ['ball_tree', 'kd_tree', 'brute']
-    # ps  = [1,2]
-    # original_settings = {}
-    # original_best = 0
-    # for weight in tqdm(weights, desc='weights', leave=False):
-    #     for p in tqdm(ps, desc='ps', leave=False):
-    #         for algorithm in tqdm(algorithms, desc='algorithms', leave=False):
-    #             for neighbor in tqdm(neighbors, desc='neighbors', leave=False):
-    #                 KNN = KNeighborsClassifier(n_neighbors=neighbor, weights=weight, p=p, algorithm=algorithm)
-    #                 scores = cross_validate(KNN, original_train, y_train, cv=10, return_train_score=True)
-    #                 ave_score = np.mean(scores['test_score'])
+    criterions = ['gini', 'entropy']
+    splitters = ['random', 'best']
+    max_features = [None, 'sqrt', 'log2']
+    original_settings = {}
+    original_best = 0
+    for criterion in tqdm(criterions, desc='criterion', leave=False):
+        for splitter in tqdm(splitters, desc='splitters', leave=False):
+            for max_feature in tqdm(max_features, desc='algorithms', leave=False):
+                tree = DecisionTreeClassifier(criterion=criterion, splitter=splitter, max_features=max_feature, random_state=69)
+                scores = cross_validate(tree, original_train, y_train, cv=10, return_train_score=True)
+                ave_score = np.mean(scores['test_score'])
 
-    #                 if ave_score > original_best:
-    #                     original_best = ave_score
-    #                     original_settings = {
-    #                         'weights': weight,
-    #                         'p': p,
-    #                         'algorithm': algorithm,
-    #                         'neightbor': neighbor,
-    #                         'accuracy': original_best,
-    #                         }
-    # with open('../plots/numeric/original_settings.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
-    #     w = csv.DictWriter(f, original_settings.keys())
-    #     w.writeheader()
-    #     w.writerow(original_settings)
+                if ave_score > original_best:
+                    original_best = ave_score
+                    original_settings = {
+                        'criterion': criterion,
+                        'splitter': splitter,
+                        'max_features': max_feature,
+                        'accuracy': original_best,
+                        }
+    with open('../plots/numeric/original_settings.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
+        w = csv.DictWriter(f, original_settings.keys())
+        w.writeheader()
+        w.writerow(original_settings)
 
     #######---logregression for reduced---#######
     # solvers = ['newton-cg', 'lbfgs', 'liblinear']
