@@ -320,11 +320,11 @@ def main():
 
 
     #------------Classification------------#
-    # print('\ntesting models...')
-    # print('original dataset')
-    # classify_data(original_train, original_test, y_train, y_test)
-    # print('reduced data')
-    # classify_data(reduced_train, reduced_test, y_train, y_test)
+    print('\ntesting models...')
+    print('original dataset')
+    classify_data(original_train, original_test, y_train, y_test)
+    print('reduced data')
+    classify_data(reduced_train, reduced_test, y_train, y_test)
 
     
 
@@ -403,19 +403,18 @@ def main():
     #     w.writerow(reduced_settings)
 
     #------------Ensemble------------#
-    ###print(x.shape, '\n', y.shape)
     # print('\nrunning ensemble')
     # original_combined_data = np.concatenate((reduced_train, reduced_test))
     # original_combined_labels = np.concatenate((y_train, y_test))
     # ensemble(x, y)
 
     #------------Final 10fold Classification------------#
-    print('\ntesting models...')
-    print('original dataset')
-    final_classify_data(x, y)
-    ldax = lda.transform(x)
-    print('reduced data')
-    final_classify_data(ldax, y)
+    # print('\ntesting models...')
+    # print('original dataset')
+    # final_classify_data(x, y)
+    # ldax = lda.transform(x)
+    # print('reduced data')
+    # final_classify_data(ldax, y)
 
 
 
