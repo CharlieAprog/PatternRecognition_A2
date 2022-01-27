@@ -117,6 +117,23 @@ def classify_data(x_train, x_test, y_train, y_test):
     print(f'tree accuracy: {tree_accuracy}, tree f1: {tree_f1}')
     print(f'log accuracy:{log_accuracy}, log f1: {log_f1}')
 
+def ensemble(x_train, x_test, y_train, y_test):
+    KNN = KNeighborsClassifier(n_neighbors=5)
+    y_predKNN = run_model(KNN, x_train, x_test, y_train)
+    knn_accuracy, knn_f1 = get_score(y_predKNN, y_test)
+
+    tree = DecisionTreeClassifier(random_state=69)
+    y_predTree = run_model(tree, x_train, x_test, y_train)
+    tree_accuracy, tree_f1 = get_score(y_predTree, y_test)
+
+    log = LogisticRegression(penalty='l2', C = 1e-05, solver='liblinear')
+    y_predlog = run_model(log, x_train, x_test, y_train)
+    log_accuracy, log_f1 = get_score(y_predlog, y_test)
+
+    print(f'knn accuracy: {knn_accuracy}, knn f1: {knn_f1}')
+    print(f'tree accuracy: {tree_accuracy}, tree f1: {tree_f1}')
+    print(f'log accuracy:{log_accuracy}, log f1: {log_f1}')
+
 def get_score(pred, y_test):
     accuracy = round(accuracy_score(y_test, pred), 3)
     f1 = round(f1_score(y_test, pred, average="macro", zero_division=0), 3)
