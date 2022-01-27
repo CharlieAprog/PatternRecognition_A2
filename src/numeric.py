@@ -119,18 +119,18 @@ def classify_data(x_train, x_test, y_train, y_test):
     print(f'tree accuracy: {tree_accuracy}, tree f1: {tree_f1}')
     print(f'log accuracy:{log_accuracy}, log f1: {log_f1}')
 
-def final_classify_data(x, y):
+def final_classify_data(xc, yc):
     KNN = KNeighborsClassifier(n_neighbors=5)
-    scores = cross_validate(KNN, x, y, cv=10, return_train_score=True)
+    scores = cross_validate(KNN, xc, yc, cv=10, return_train_score=True)
     knn_accuracy = np.mean(scores['test_score'])
 
 
     tree = DecisionTreeClassifier(criterion='gini', splitter='best', random_state=69)
-    scores = cross_validate(tree, x, y, cv=10, return_train_score=True)
+    scores = cross_validate(tree, xc, yc, cv=10, return_train_score=True)
     tree_accuracy = np.mean(scores['test_score'])
 
     log = LogisticRegression(solver='liblinear', C = 1e-05, penalty = 'l2', random_state=69)
-    scores = cross_validate(log, x, y, cv=10, return_train_score=True)
+    scores = cross_validate(log, xc, yc, cv=10, return_train_score=True)
     log_accuracy = np.mean(scores['test_score'])
 
 
@@ -326,12 +326,6 @@ def main():
     # print('reduced data')
     # classify_data(reduced_train, reduced_test, y_train, y_test)
 
-    #------------Ensemble------------#
-    ###print(x.shape, '\n', y.shape)
-    # print('\nrunning ensemble')
-    # original_combined_data = np.concatenate((reduced_train, reduced_test))
-    # original_combined_labels = np.concatenate((y_train, y_test))
-    # ensemble(x, y)
     
 
     #------------Clustering------------#
@@ -408,12 +402,20 @@ def main():
     #     w.writeheader()
     #     w.writerow(reduced_settings)
 
-    #------------Final Classification------------#
+    #------------Ensemble------------#
+    ###print(x.shape, '\n', y.shape)
+    # print('\nrunning ensemble')
+    # original_combined_data = np.concatenate((reduced_train, reduced_test))
+    # original_combined_labels = np.concatenate((y_train, y_test))
+    # ensemble(x, y)
+
+    #------------Final 10fold Classification------------#
     print('\ntesting models...')
     print('original dataset')
     final_classify_data(x, y)
+    ldax = lda.transform(x)
     print('reduced data')
-    final_classify_data(x, y)
+    final_classify_data(ldax, y)
 
 
 
