@@ -119,6 +119,25 @@ def classify_data(x_train, x_test, y_train, y_test):
     print(f'tree accuracy: {tree_accuracy}, tree f1: {tree_f1}')
     print(f'log accuracy:{log_accuracy}, log f1: {log_f1}')
 
+def final_classify_data(x, y):
+    KNN = KNeighborsClassifier(n_neighbors=5)
+    scores = cross_validate(KNN, x, y, cv=10, return_train_score=True)
+    knn_accuracy = np.mean(scores['test_score'])
+
+
+    tree = DecisionTreeClassifier(criterion='gini', splitter='best', random_state=69)
+    scores = cross_validate(tree, x, y, cv=10, return_train_score=True)
+    tree_accuracy = np.mean(scores['test_score'])
+
+    log = LogisticRegression(solver='liblinear', C = 1e-05, penalty = 'l2', random_state=69)
+    scores = cross_validate(log, x, y, cv=10, return_train_score=True)
+    log_accuracy = np.mean(scores['test_score'])
+
+
+    print(f'knn accuracy: {knn_accuracy}')
+    print(f'tree accuracy: {tree_accuracy}')
+    print(f'log accuracy:{log_accuracy}')
+
 def ensemble(x, y):
     KNN = KNeighborsClassifier(n_neighbors=5)
     tree = DecisionTreeClassifier(criterion='gini', splitter='best')
@@ -252,7 +271,7 @@ def main():
     # visualise_data(x, y, save=True, dims=3, title='visualisation of numeric data 3D')
 
 
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, stratify=y, random_state=69)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, stratify=y, random_state=69)
 
     #------------Feature Extraction------------#
     print('\npreprocessing data...')
@@ -388,6 +407,13 @@ def main():
     #     w = csv.DictWriter(f, reduced_settings.keys())
     #     w.writeheader()
     #     w.writerow(reduced_settings)
+
+    #------------Final Classification------------#
+    print('\ntesting models...')
+    print('original dataset')
+    final_classify_data(x, y)
+    print('reduced data')
+    final_classify_data(x, y)
 
 
 
