@@ -23,4 +23,4 @@ To install the requirements to make sure the code will run as expected,
 >run: *pip install -r requirements.txt*
 
 If new requirements have been added to the code AND YOU ARE USING A VENV, you can save the requirements by running the following command
->run: *pip freeze > requirements.txt*
+>run: *pip freeze > requirements.txt* (*pip freeze > ../requirements.txt* if you are in the src directory)

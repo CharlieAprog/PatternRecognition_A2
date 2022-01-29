@@ -271,31 +271,34 @@ def main():
     #------------Grid Search------------#
 
     #######---knn for original---#######
-    criterions = ['gini', 'entropy']
-    splitters = ['random', 'best']
-    max_features = [None, 'sqrt', 'log2']
-    original_settings = {}
-    original_best = 0
-    for criterion in tqdm(criterions, desc='criterion', leave=False):
-        for splitter in tqdm(splitters, desc='splitters', leave=False):
-            for max_feature in tqdm(max_features, desc='algorithms', leave=False):
-                tree = DecisionTreeClassifier(criterion=criterion, splitter=splitter, max_features=max_feature, random_state=69)
-                scores = cross_validate(tree, original_train, y_train, cv=10, return_train_score=True)
-                ave_score = np.mean(scores['test_score'])
+    # criterions = ['gini', 'entropy']
+    # splitters = ['random', 'best']
+    # max_features = [None, 'sqrt', 'log2']
+    # original_settings = {}
+    # original_best = 0
+    # for criterion in tqdm(criterions, desc='criterion', leave=False):
+    #     for splitter in tqdm(splitters, desc='splitters', leave=False):
+    #         for max_feature in tqdm(max_features, desc='algorithms', leave=False):
+    #             tree = DecisionTreeClassifier(criterion=criterion, splitter=splitter, max_features=max_feature, random_state=69)
+    #             scores = cross_validate(tree, original_train, y_train, cv=10, return_train_score=True)
+    #             ave_score = np.mean(scores['test_score'])
 
-                if ave_score > original_best:
-                    original_best = ave_score
-                    original_settings = {
-                        'criterion': criterion,
-                        'splitter': splitter,
-                        'max_features': max_feature,
-                        'accuracy': original_best,
-                        }
-    with open('../plots/numeric/original_settings.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
-        w = csv.DictWriter(f, original_settings.keys())
-        w.writeheader()
-        w.writerow(original_settings)
+    #             if ave_score > original_best:
+    #                 original_best = ave_score
+    #                 original_settings = {
+    #                     'criterion': criterion,
+    #                     'splitter': splitter,
+    #                     'max_features': max_feature,
+    #                     'accuracy': original_best,
+    #                     }
+    # with open('../plots/numeric/original_settings.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
+    #     w = csv.DictWriter(f, original_settings.keys())
+    #     w.writeheader()
+    #     w.writerow(original_settings)
 
+    final_tree = DecisionTreeClassifier(criterion='gini', splitter='best', max_features=None, random_state=69)
+    final_original_pred = run_model(final_tree, original_train, original_test, y_train)
+    final_original_accuracy, final_original_f1 = get_score(final_original_pred, y_test)
     #######---logregression for reduced---#######
     # solvers = ['newton-cg', 'lbfgs', 'liblinear']
     # penalties = ['none', 'l1', 'l2', 'elasticnet']
@@ -323,6 +326,13 @@ def main():
     #     w = csv.DictWriter(f, reduced_settings.keys())
     #     w.writeheader()
     #     w.writerow(reduced_settings)
+    final_log = LogisticRegression(max_iter=400, solver='liblinear', C = 1e-05, penalty = 'l2', random_state=69)
+    final_reduced_pred = run_model(final_log, reduced_train, reduced_test, y_train)
+    final_reduced_accuracy, final_reduced_f1 = get_score(final_reduced_pred, y_test)
+
+    print(f'final original accuracy:{final_original_accuracy}, final original f1: {final_original_f1}')
+    print(f'final reduced accuracy:{final_reduced_accuracy}, final reduced f1: {final_reduced_f1}')
+
 
 
 
