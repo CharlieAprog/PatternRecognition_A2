@@ -18,6 +18,7 @@ from sklearn.model_selection import cross_validate, train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from tqdm import tqdm
+from sklearn.model_selection import KFold
 
 
 def make_scatter_plot(data, labels, title, save_plot=False, dimension=2, cluster=[]):
@@ -118,22 +119,98 @@ def classify_data(x_train, x_test, y_train, y_test):
     print(f'tree accuracy: {tree_accuracy}, tree f1: {tree_f1}')
     print(f'log accuracy:{log_accuracy}, log f1: {log_f1}')
 
+def final_classify_data(xc, yc):
+    KNN = KNeighborsClassifier(n_neighbors=5)
+    scores = cross_validate(KNN, xc, yc, cv=10, return_train_score=True)
+    knn_accuracy = np.mean(scores['test_score'])
+
+
+    tree = DecisionTreeClassifier(criterion='gini', splitter='best', random_state=69)
+    scores = cross_validate(tree, xc, yc, cv=10, return_train_score=True)
+    tree_accuracy = np.mean(scores['test_score'])
+
+    log = LogisticRegression(solver='liblinear', C = 1e-05, penalty = 'l2', random_state=69)
+    scores = cross_validate(log, xc, yc, cv=10, return_train_score=True)
+    log_accuracy = np.mean(scores['test_score'])
+
+
+    print(f'knn accuracy: {knn_accuracy}')
+    print(f'tree accuracy: {tree_accuracy}')
+    print(f'log accuracy:{log_accuracy}')
+
+def ensemble(x, y):
+    KNN = KNeighborsClassifier(n_neighbors=5)
+    tree = DecisionTreeClassifier(criterion='gini', splitter='best')
+    log = LogisticRegression(penalty='l2', C = 1e-05, solver='liblinear', random_state=69)
+
+    x = x.to_numpy()
+    y = y.to_numpy()
+    splits = 5
+    kf = KFold(n_splits=splits)
+    kf.get_n_splits(x)
+    avg_accuracy = []
+    
+    total_accuracies = []
+    for train_index, test_index in kf.split(x):
+        ###print("TRAIN:", train_index, "TEST:", test_index)
+        x_train, x_test = x[train_index], x[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        #training
+        KNN = KNN.fit(x_train, y_train)
+        tree = tree.fit(x_train, y_train)
+        log = log.fit(x_train, y_train)
+
+        predictions = []
+        testing_instances = 0
+        ###manual ensemble###
+        knn_pred = KNN.predict(x_test)
+        tree_pred = tree.predict(x_test)
+        log_pred = log.predict(x_test)
+
+        accuracies = []
+        for index in range(0, len(knn_pred)):
+            knn_prediction = knn_pred[index]  
+            tree_prediction = tree_pred[index] 
+            log_prediction = log_pred[index]   
+            ###majority vote###
+            vote = 0
+            if (knn_prediction ==  y_test[index]):
+                vote += 1
+            if(tree_prediction ==  y_test[index]):
+                vote += 1
+            if(log_prediction ==  y_test[index]):
+                vote += 1
+            if(vote >= 2):
+                accuracies.append(1)
+            else: 
+                accuracies.append(0)
+            ###print(vote, end = '')
+        ####accuracy within kfold###
+        ###print('')
+        accuracy = sum(accuracies) / len(knn_pred)
+        total_accuracies.append(accuracy)
+        ###print(f'Accuracies within split: {accuracy}')
+    ###overall accuracy###
+    accuracy = sum(total_accuracies) / splits
+
+    print(f'Ensemble: {accuracy}')
 
 def get_score(pred, y_test):
     accuracy = round(accuracy_score(y_test, pred), 3)
     f1 = round(f1_score(y_test, pred, average="macro", zero_division=0), 3)
     return accuracy, f1
 
-def calculate_kn_distance(X,k):
+def calculate_kn_distance(x,k):
 
     kn_distance = []
-    for i in range(len(X)):
+    for i in range(len(x)):
         eucl_dist = []
-        for j in range(len(X)):
+        for j in range(len(x)):
             eucl_dist.append(
                 math.sqrt(
-                    ((X[i,0] - X[j,0]) ** 2) +
-                    ((X[i,1] - X[j,1]) ** 2)))
+                    ((x[i,0] - x[j,0]) ** 2) +
+                    ((x[i,1] - x[j,1]) ** 2)))
 
         eucl_dist.sort()
         kn_distance.append(eucl_dist[k])
@@ -194,7 +271,7 @@ def main():
     # visualise_data(x, y, save=True, dims=3, title='visualisation of numeric data 3D')
 
 
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, stratify=y, random_state=69)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, stratify=y, random_state=69)
 
     #------------Feature Extraction------------#
     print('\npreprocessing data...')
@@ -249,23 +326,24 @@ def main():
     print('reduced data')
     classify_data(reduced_train, reduced_test, y_train, y_test)
 
+    
 
     #------------Clustering------------#
-    print('\nclustering data...')
+    # print('\nclustering data...')
     # cluster_data_search(original_train, original_test)
     # cluster_data_search(reduced_train, reduced_test)
-    original_labels, original_clusters = brc_clustering(original_train, original_test)
+    # original_labels, original_clusters = brc_clustering(original_train, original_test)
     # print(original_labels)
-    reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 3, 20)
+    # reduced_labels, reduced_clusters = cluster_with_params(reduced_train, reduced_test, 3, 20)
 
-    print(f'Estimated no. of clusters for original dataset: {original_clusters}')
-    print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
-    original_data = np.concatenate((original_train, original_test))
-    reduced_data = np.concatenate((reduced_train, reduced_test))
-    visualise_cluster(original_data, original_labels, dims=2, save=True,  title='Clustering with Original Data 2D')
-    visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
-    visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
-    visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
+    # print(f'Estimated no. of clusters for original dataset: {original_clusters}')
+    # print(f'Estimated no. of clusters for reduced dataset: {reduced_clusters}')
+    # original_data = np.concatenate((original_train, original_test))
+    # reduced_data = np.concatenate((reduced_train, reduced_test))
+    # visualise_cluster(original_data, original_labels, dims=2, save=True,  title='Clustering with Original Data 2D')
+    # visualise_cluster(original_data, original_labels, dims=3, save=True,  title='Clustering with Original Data 3D')
+    # visualise_cluster(reduced_data, reduced_labels, dims=2, save=True,  title='Clustering with Reduced Data 2D')
+    # visualise_cluster(reduced_data, reduced_labels, dims=3, save=True,  title='Clustering with Reduced Data 3D')
 
 
     #------------Grid Search------------#
@@ -333,6 +411,20 @@ def main():
     print(f'final original accuracy:{final_original_accuracy}, final original f1: {final_original_f1}')
     print(f'final reduced accuracy:{final_reduced_accuracy}, final reduced f1: {final_reduced_f1}')
 
+
+    #------------Ensemble------------#
+    # print('\nrunning ensemble')
+    # original_combined_data = np.concatenate((reduced_train, reduced_test))
+    # original_combined_labels = np.concatenate((y_train, y_test))
+    # ensemble(x, y)
+
+    #------------Final 10fold Classification------------#
+    # print('\ntesting models...')
+    # print('original dataset')
+    # final_classify_data(x, y)
+    # ldax = lda.transform(x)
+    # print('reduced data')
+    # final_classify_data(ldax, y)
 
 
 

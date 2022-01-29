@@ -30,7 +30,7 @@ def plot_it(res):
 
 def main():
     np.seterr(invalid='ignore')
-    df = pd.read_csv('../data/CreditCards/creditcard.csv')
+    df = pd.read_csv('../data/creditcard.csv')
     X = df.drop(columns=['Time', 'Amount', 'Class'], axis=1).values
     y = df['Class'].values
 
